@@ -1,0 +1,6 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'com.feng.files'
+ compileSdk 34
+ defaultConfig { applicationId 'com.feng.files'; minSdk 26; targetSdk 32; versionCode 3; versionName '3.0' }
+}

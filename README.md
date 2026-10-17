@@ -1,0 +1,1 @@
+Feng Files Native Android 12+. Upload CONTENTS of this folder to GitHub repository root, then Actions > Build Feng Files Native APK. Android All Files Access required. Android/data and private app folders remain restricted. Basic browse/open/rename/delete only; design is an early native prototype. Debug build not tested.

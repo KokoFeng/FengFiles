@@ -1,0 +1,27 @@
+package com.feng.files;
+import android.app.*;import android.os.*;import android.content.*;import android.net.Uri;import android.provider.Settings;import android.graphics.Color;import android.graphics.Typeface;import android.graphics.drawable.GradientDrawable;import android.view.*;import android.widget.*;import java.io.*;import java.util.*;
+public class MainActivity extends Activity {
+ LinearLayout root, list; TextView title, count; File current; int blue=Color.rgb(0,122,255);
+ GradientDrawable bg(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius);return d;}
+ TextView text(String s,int size,int color){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);t.setPadding(15,13,15,13);return t;}
+ @Override public void onCreate(Bundle b){super.onCreate(b);current=android.os.Environment.getExternalStorageDirectory();show();}
+ boolean granted(){return Build.VERSION.SDK_INT<30 || android.os.Environment.isExternalStorageManager();}
+ void permission(){try{Intent i=new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,Uri.parse("package:"+getPackageName()));startActivity(i);}catch(Exception e){startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));}}
+ @Override protected void onResume(){super.onResume();if(root!=null)show();}
+ void show(){root=new LinearLayout(this);root.setOrientation(1);root.setBackgroundColor(Color.rgb(240,246,255));setContentView(root);
+ LinearLayout head=new LinearLayout(this);head.setOrientation(1);head.setPadding(16,28,16,8);root.addView(head);
+ TextView back=text("‹  Back",17,blue);head.addView(back);back.setOnClickListener(v->up());
+ title=text("Feng Files",32,Color.rgb(20,35,60));title.setTypeface(null,Typeface.BOLD);head.addView(title);
+ count=text("Liquid Glass • Android storage",13,Color.GRAY);head.addView(count);
+ if(!granted()){TextView p=text("Allow access to all files to browse shared storage. Tap here to open Android settings.",17,blue);p.setBackground(bg(Color.WHITE,32));root.addView(p);p.setOnClickListener(v->permission());return;}
+ TextView path=text(current.getAbsolutePath(),13,Color.DKGRAY);root.addView(path);
+ ScrollView scroll=new ScrollView(this);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));list=new LinearLayout(this);list.setOrientation(1);list.setPadding(15,8,15,15);scroll.addView(list);load();
+ }
+ void load(){list.removeAllViews();File[] files=current.listFiles();if(files==null){list.addView(text("This folder cannot be accessed on this Android version.",16,Color.GRAY));return;}Arrays.sort(files,(a,b)->{if(a.isDirectory()!=b.isDirectory())return a.isDirectory()?-1:1;return a.getName().compareToIgnoreCase(b.getName());});count.setText(files.length+" items • Local storage");for(File f:files){LinearLayout line=new LinearLayout(this);line.setGravity(Gravity.CENTER_VERTICAL);line.setBackground(bg(Color.WHITE,30));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=7;list.addView(line,lp);TextView item=text((f.isDirectory()?"📁  ":"📄  ")+f.getName(),16,Color.rgb(24,40,64));item.setSingleLine(true);item.setEllipsize(android.text.TextUtils.TruncateAt.END);line.addView(item,new LinearLayout.LayoutParams(0,-2,1));TextView more=text("⋯",23,blue);line.addView(more);item.setOnClickListener(v->{if(f.isDirectory()){current=f;show();}else open(f);});more.setOnClickListener(v->menu(f));}}
+ void open(File f){try{Uri u=new Uri.Builder().scheme("content").authority(getPackageName()+".provider").appendPath("open").appendQueryParameter("path",f.getAbsolutePath()).build();Intent i=new Intent(Intent.ACTION_VIEW);i.setDataAndType(u,getContentResolver().getType(u));i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(Intent.createChooser(i,"Open with"));}catch(Exception e){new AlertDialog.Builder(this).setMessage("No compatible app found to open this file.").setPositiveButton("OK",null).show();}}
+ void menu(File f){String[] actions={"Open","Rename","Delete"};new AlertDialog.Builder(this).setTitle(f.getName()).setItems(actions,(d,which)->{if(which==0){if(f.isDirectory()){current=f;show();}else open(f);}if(which==1)rename(f);if(which==2)delete(f);}).show();}
+ void rename(File f){EditText input=new EditText(this);input.setText(f.getName());new AlertDialog.Builder(this).setTitle("Rename").setView(input).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{String n=input.getText().toString().trim();if(n.length()>0&&!n.contains("/")&&!n.equals(".")&&!n.equals("..")){if(!f.renameTo(new File(f.getParentFile(),n)))Toast.makeText(this,"Rename failed",0).show();show();}}).show();}
+ void delete(File f){new AlertDialog.Builder(this).setTitle("Delete file?").setMessage(f.getName()+" will be deleted permanently. Non-empty folders cannot be deleted.").setNegativeButton("Cancel",null).setPositiveButton("Delete",(d,w)->{if(!f.delete())Toast.makeText(this,"Delete failed",0).show();show();}).show();}
+ void up(){File parent=current.getParentFile();File storage=android.os.Environment.getExternalStorageDirectory();if(parent!=null&&current.getAbsolutePath().startsWith(storage.getAbsolutePath()+"/")&&parent.getAbsolutePath().startsWith(storage.getAbsolutePath())){current=parent;show();}else finish();}
+ @Override public void onBackPressed(){up();}
+}
